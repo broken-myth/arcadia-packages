@@ -3,13 +3,10 @@ import { resolve } from "path";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-	server: {
-		open: "/test/demo.html",
-	},
 	publicDir: "public",
 	build: {
 		lib: {
-			entry: resolve(__dirname, "src/index.ts"),
+			entry: resolve(__dirname, "index.ts"),
 			name: "freeroam-arcadia-23",
 			fileName: "freeroam-arcadia-23",
 		},

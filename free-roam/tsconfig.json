@@ -1,10 +1,10 @@
 {
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "composite": true,
-    "noEmit": false,
-    "esModuleInterop": true
-  },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist"]
+	"compilerOptions": {
+		"experimentalDecorators": true,
+		"composite": true,
+		"noEmit": false,
+		"esModuleInterop": true
+	},
+	"include": ["**/*.ts", "**/*.tsx", "../old_maps.ts"],
+	"exclude": ["node_modules", "dist"]
 }

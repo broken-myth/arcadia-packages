@@ -1,106 +1,105 @@
 import { GameObjects } from "phaser";
-import { FreeRoamScene } from "../scenes/FreeRoamScene";
-import keys from "../utils/keys";
+import { FreeRoamScene } from "../scenes/FreeRoam";
+import { Point, RegionName } from "../types.d";
+import { config } from "../config/config";
 
-class Teleporter extends GameObjects.Image{
-    parentScene:FreeRoamScene
-    text:Phaser.GameObjects.Text
-    canTeleport:boolean
-    teleportTo:string
-    vicinityX:number
-    vicinityY:number
-    constructor(
-        parentScene:FreeRoamScene,
-        x:number,
-        y:number,
-        teleportTo?:string
-    ){
-        super(
-            parentScene,
-            parentScene.map.tileToWorldX(x),
-            parentScene.map.tileToWorldY(y),
-            keys.TELEPORTER_ASSET
-        )
-        this.parentScene = parentScene
-        this.scale = 0.2
-        this.alpha = 0
-        this.teleportTo = teleportTo
-        parentScene.add.existing(this);
-    }
+class Teleporter extends GameObjects.Sprite {
+	parentScene: FreeRoamScene;
+	teleportImage: Phaser.GameObjects.Image | undefined = undefined;
+	canTeleport = false;
+	destination: {
+		name: RegionName;
+		spawnPoint: Point;
+	};
 
-    checkIfPlayerIsNear():boolean{
-        if(this.teleportTo==="thunder" || this.parentScene.currentMap==="thunder"){
-            return(
-                Math.abs(this.parentScene.player.x - this.x) < 280 &&
-                Math.abs(this.parentScene.player.y - this.y) < 120
-            )
-        }
-            return (
-                Math.abs(this.parentScene.player.x - this.x) < 130 &&
-                Math.abs(this.parentScene.player.y - this.y) < 315
-            )
-    }
-
-    showPopup(teleportTo:string): void {
-		this.text = this.parentScene.add.text(this.x-15, this.y-70, `Hit Space to teleport to ${teleportTo} map`, {
-			font: "20px Arial",
+	setupAnimations(): void {
+		this.anims.create({
+			key: config.teleporter.animationKey,
+			frames: this.anims.generateFrameNumbers(
+				config.teleporter.spriteSheet.key,
+				{
+					start: 0,
+					end: 7,
+				}
+			),
+			frameRate: 8,
+			repeat: -1,
 		});
 	}
 
-    triggerTeleport():void{
-        if(this.parentScene.currentMap==="thunder"||this.parentScene.currentMap==="water"||this.parentScene.currentMap==="fire"){
-            this.parentScene.scene.start(keys.LOADER_SCENE);
-            setTimeout(()=>{
-                this.parentScene.switchToCentralScene(this.parentScene.currentMap);
-                this.parentScene.scene.stop(keys.LOADER_SCENE)
-            },1000)
-        }
-        if(this.parentScene.currentMap === "central"){
-            if(this.teleportTo){
-                if(this.teleportTo==="fire"){
-                    this.parentScene.scene.start(keys.LOADER_SCENE);
-                    setTimeout(()=>{
-                        this.parentScene.switchToFireScene();
-                        this.parentScene.scene.stop(keys.LOADER_SCENE)
-                    },1000)
-                }
-                else if(this.teleportTo==="water"){
-                    this.parentScene.scene.start(keys.LOADER_SCENE);
-                    setTimeout(()=>{
-                        this.parentScene.switchToWaterScene();
-                        this.parentScene.scene.stop(keys.LOADER_SCENE)
-                    },1000)
-                    
-                }
-                else if(this.teleportTo==="thunder"){
-                    this.parentScene.scene.start(keys.LOADER_SCENE);
-                    setTimeout(()=>{
-                        this.parentScene.switchToThunderScene();
-                        this.parentScene.scene.stop(keys.LOADER_SCENE)
-                    },1000)
-                }
-            }
-            else{
-                //Error - no params passed  
-            }
-        }
-    }
+	constructor(
+		parentScene: FreeRoamScene,
+		x: number,
+		y: number,
+		destination: {
+			name: RegionName;
+			spawnPoint: Point;
+		},
+		rotation: number
+	) {
+		super(
+			parentScene,
+			parentScene.map.tileToWorldX(x),
+			parentScene.map.tileToWorldY(y),
+			config.teleporter.spriteSheet.key
+		);
+		this.parentScene = parentScene;
+		this.destination = destination;
 
-    update(): void {
-        const isNear = this.checkIfPlayerIsNear()
-        if(isNear && !this.canTeleport){
-            this.showPopup(this.teleportTo)
-        }
-        if(!isNear && this.canTeleport){
-            this.text.destroy()
-        }
+		// rotate
+		this.setAngle(rotation);
+		this.setScale(2.5);
 
-        this.canTeleport = isNear
+		this.setupAnimations();
+		parentScene.add.existing(this);
+		this.anims.play(config.teleporter.animationKey, true);
+	}
 
-        if(this.canTeleport&&this.parentScene.cursor.space.isDown){
-            this.triggerTeleport();
-        }
-    }    
+	checkIfPlayerIsNear(): boolean {
+		if (!this.parentScene.player) {
+			return false;
+		}
+		return (
+			Math.abs(this.parentScene.player.x - this.x) < 100 &&
+			Math.abs(this.parentScene.player.y - this.y) < 100
+		);
+	}
+
+	showPopup(): void {
+		this.teleportImage = this.parentScene.add.image(
+			this.x,
+			this.y,
+			config.teleporter.teleportImage.key
+		);
+		this.teleportImage.setDepth(10);
+	}
+
+	triggerTeleport(): void {
+		this.parentScene.scene.start(config.loader.key);
+		setTimeout(() => {
+			this.parentScene.scene.restart({
+				newRegionName: this.destination.name,
+				spawnPoint: this.destination.spawnPoint,
+			});
+			this.parentScene.scene.stop(config.loader.key);
+		}, 1300);
+	}
+
+	update(): void {
+		const isNear = this.checkIfPlayerIsNear();
+		if (isNear && !this.canTeleport) {
+			this.showPopup();
+		}
+		if (!isNear && this.canTeleport && this.teleportImage) {
+			this.teleportImage.destroy();
+		}
+
+		this.canTeleport = isNear;
+
+		if (this.canTeleport && this.parentScene.ekey.isDown) {
+			this.triggerTeleport();
+		}
+	}
 }
 
-export default Teleporter
+export default Teleporter;

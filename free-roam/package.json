@@ -1,8 +1,8 @@
 {
-	"name": "free-roam-arc-23",
+	"name": "free-roam",
 	"version": "2022.0.0",
 	"description": "Library for FreeRoam Component",
-	"main": "src/index.ts",
+	"main": "index.ts",
 	"scripts": {
 		"dev": "vite --config vite.dev.config.ts",
 		"build": "vite build --config vite.prod.config.ts"
@@ -17,12 +17,9 @@
 		"@lit-labs/react": "^1.1.1",
 		"@rollup/plugin-replace": "^5.0.2",
 		"buffer": "^6.0.3",
-		"lit": "^2.6.1"
-	},
-	"peerDependencies": {
+		"lit": "^2.6.1",
 		"phaser": "^3.55.2",
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0"
+		"react": "^18.2.0"
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.1.1",

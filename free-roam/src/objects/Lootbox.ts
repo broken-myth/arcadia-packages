@@ -1,6 +1,5 @@
 import { GameObjects } from "phaser";
-import { FreeRoamScene } from "../scenes/FreeRoamScene";
-import keys from "../utils/keys";
+import { FreeRoamScene } from "../scenes/FreeRoam";
 import { Events, eventEmitter } from "../events/EventEmitters";
 import { config } from "../config/config";
 
@@ -9,7 +8,7 @@ class Lootbox extends GameObjects.Image {
 	isOpened: boolean;
 	canOpenLootbox = false;
 	parentScene: FreeRoamScene;
-	text: Phaser.GameObjects.Text;
+	openImage: Phaser.GameObjects.Image | undefined = undefined;
 	openInProgess = false;
 
 	constructor(
@@ -23,7 +22,7 @@ class Lootbox extends GameObjects.Image {
 			parentScene,
 			parentScene.map.tileToWorldX(x),
 			parentScene.map.tileToWorldY(y),
-			isOpened ? keys.LOOTBOXOPEN_ASSET : keys.LOOTBOXCLOSED_ASSET
+			isOpened ? config.lootboxOpen.key : config.lootboxClosed.key
 		);
 
 		this.isOpened = isOpened;
@@ -36,6 +35,9 @@ class Lootbox extends GameObjects.Image {
 	}
 
 	checkIfPlayerIsNear(): boolean {
+		if (!this.parentScene.player) {
+			return false;
+		}
 		return (
 			Math.abs(this.parentScene.player.x - this.x) < 100 &&
 			Math.abs(this.parentScene.player.y - this.y) < 100
@@ -43,9 +45,9 @@ class Lootbox extends GameObjects.Image {
 	}
 
 	showPopup(): void {
-		this.text = this.parentScene.add.text(this.x, this.y, "Click E to Open", {
-			font: "16px Arial",
-		});
+		this.openImage = this.parentScene.add
+			.image(this.x, this.y - 100, config.openLootbox.key)
+			.setDepth(10);
 	}
 
 	triggerOpen(): void {
@@ -53,19 +55,30 @@ class Lootbox extends GameObjects.Image {
 			return;
 		}
 		this.openInProgess = true;
+
+		if (this.parentScene.player === null) {
+			return;
+		}
+
+		const { x, y } = this.parentScene.player.body;
+
 		eventEmitter.emit(Events.LOOTBOX_OPEN, {
-			x: this.parentScene.map.worldToTileX(this.parentScene.player.body.x),
-			y: this.parentScene.map.worldToTileY(this.parentScene.player.body.y),
+			x: this.parentScene.map.worldToTileX(x),
+			y: this.parentScene.map.worldToTileY(y),
 			lootboxID: this.ID,
 		});
-		this.text.destroy();
+		if (this.openImage) {
+			this.openImage.destroy();
+		}
 	}
 
 	Open(): void {
 		this.openInProgess = false;
 		this.isOpened = true;
-		this.setTexture(keys.LOOTBOXOPEN_ASSET);
-		this.text.destroy();
+		this.setTexture(config.lootboxOpen.key);
+		if (this.openImage) {
+			this.openImage.destroy();
+		}
 	}
 
 	update(): void {
@@ -79,7 +92,9 @@ class Lootbox extends GameObjects.Image {
 		}
 
 		if (!isNear && this.canOpenLootbox) {
-			this.text.destroy();
+			if (this.openImage) {
+				this.openImage.destroy();
+			}
 		}
 
 		this.canOpenLootbox = isNear;

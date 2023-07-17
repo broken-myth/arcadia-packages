@@ -3,12 +3,12 @@ import { customElement, property } from "lit/decorators.js";
 import Phaser from "phaser";
 import { Buffer } from "buffer";
 import { config } from "./config/config";
-
 import { createComponent } from "@lit-labs/react";
 import React from "react";
 import { eventEmitter, Events } from "./events/EventEmitters";
-import { FreeRoamScene, LootboxDetail } from "./scenes/FreeRoamScene";
-import { LoaderScene } from "./scenes/LoaderScene";
+import { FreeRoamScene } from "./scenes/FreeRoam";
+import { LoaderScene } from "./scenes/Loader";
+import { LootboxDetails } from "./types";
 
 const decrypt = (text: string, key: string) => {
 	return Number(
@@ -36,6 +36,7 @@ class FreeRoam extends LitElement {
 		isOpen: boolean;
 	}[] = [];
 	@property({ type: String }) encryptionKey = "";
+	@property({ type: String }) characterURL = "";
 
 	firstUpdated(): void {
 		this.lootboxDetails.forEach((lootboxDetail) => {
@@ -56,7 +57,13 @@ class FreeRoam extends LitElement {
 			parent:
 				this.shadowRoot?.querySelector<HTMLElement>("#free-roam") ??
 				undefined,
-			scene: [new FreeRoamScene(this.lootboxDetails as LootboxDetail[]),new LoaderScene()],
+			scene: [
+				new FreeRoamScene(
+					this.lootboxDetails as LootboxDetails[],
+					this.characterURL
+				),
+				new LoaderScene(),
+			],
 			dom: {
 				createContainer: false,
 			},
@@ -77,11 +84,14 @@ class FreeRoam extends LitElement {
 	}
 
 	disconnectedCallback(): void {
-		this._game.scene.getScene("FreeroamScene").events.removeAllListeners();
 		this._game.destroy(true);
 	}
 
 	render(): TemplateResult {
+		const realWidth = window.screen.width * window.devicePixelRatio;
+		const realHeight = window.screen.height * window.devicePixelRatio;
+		window.innerHeight = realHeight;
+		window.innerWidth = realWidth;
 		return html`<div id="free-roam"></div>`;
 	}
 }
